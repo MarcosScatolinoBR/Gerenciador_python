@@ -1,3 +1,9 @@
+'''
+Programa de Gerenciamento de tarefas simples em Python.
+Observações:
+Após implementar a busca e salvamento de arquivo da busca, o Colorama parou de funcionar... preciso corrigir isso mas estou empenhado em outro projeto no momento.
+'''
+
 import csv
 import re
 import pandas as pd
@@ -9,6 +15,7 @@ from colorama import Fore, init, Style
 
 init(autoreset=True)
 
+# Inicio do programa verifica a existencia do arquivo dados.csv e o abre, se não existir, cria um.
 def main():
     try:
         with open("dados.csv", "r", encoding="utf-8") as arquivo:
@@ -23,6 +30,7 @@ def main():
 
     menu()
 
+# Conta a quantidade de tarefas existentes.
 def prox_reg():
     try:
         with open('dados.csv', 'r', encoding='utf-8') as arquivo:
@@ -36,6 +44,7 @@ def prox_reg():
     except FileNotFoundError:
             return 1
 
+# Verifica as tarefas a vencer e que já venceram.
 def verifica_tarefas():
     nome_colunas = ["Núm. Registro", "Tarefa", "Descrição", "Vencimento", "Estado"]
     data = pd.read_csv('dados.csv', header=None, names=nome_colunas)
@@ -43,10 +52,8 @@ def verifica_tarefas():
     hoje = datetime.now()
     tres_dias = hoje + timedelta(days=3)
     
-    # Convertendo a coluna 'Vencimento' para datetime
     data['Vencimento'] = pd.to_datetime(data['Vencimento'], format='%d/%m/%Y', errors='coerce')
     
-    # Verificando tarefas que vencem nos próximos 3 dias
     proximas_tarefas = data[(data['Vencimento'] >= hoje) & (data['Vencimento'] <= tres_dias)]
     numero_tarefas = len(proximas_tarefas)
     
@@ -55,7 +62,7 @@ def verifica_tarefas():
     else:
         print(Fore.YELLOW + f"Existem {numero_tarefas} tarefas a vencer nos próximos 3 dias." + Fore.RESET)
     
-    # Verificando tarefas vencidas
+    
     tarefas_vencidas = data[data['Vencimento'] < hoje]
     numero_vencidas = len(tarefas_vencidas)
     
@@ -67,7 +74,6 @@ def verifica_tarefas():
         uni_vencidas = unidecode(vencidas.lower())
         
         if uni_vencidas == "sim" or uni_vencidas == "1" or uni_vencidas == "1-sim":
-            # Formatar e exibir a tabela de tarefas vencidas
             tarefas_vencidas['Vencimento'] = tarefas_vencidas['Vencimento'].dt.strftime('%d/%m/%Y')
             df_str = tarefas_vencidas.astype(str)
             col_widths = {col: max(df_str[col].str.len().max(), len(col)) + 2 for col in df_str.columns}
@@ -95,6 +101,7 @@ def verifica_tarefas():
             print("Opção inválida!")
     return
 
+# Menu principal
 def menu():
     tarefas = 0
     for linhas in open('dados.csv'):
@@ -151,7 +158,7 @@ def menu():
         menu()
         return
 
-
+# Função busca tarefa.
 def busca_tarefa():
     print("Escolha o tipo de busca:")
     print("1 - Por nome da tarefa")
@@ -162,7 +169,6 @@ def busca_tarefa():
     nome_colunas = ["# Reg", "Tarefa", "Descrição", "Vencimento", "Estado"]
     data = pd.read_csv('dados.csv', header=None, names=nome_colunas)
 
-    # Convertendo a coluna 'Vencimento' para datetime
     data['Vencimento'] = pd.to_datetime(data['Vencimento'], format='%d/%m/%Y', errors='coerce')
 
     if tipo_busca == "1":
@@ -225,6 +231,7 @@ def busca_tarefa():
         for linha in linhas_resultado:
             print(Fore.BLUE + linha)
 
+    # Opção de salvar as tarefas desejadas nos formatos txt, pdf e docx
     salvar_arquivo = input("Deseja salvar o resultado em um arquivo (txt, pdf, docx)? (S/N): ").upper()
     if salvar_arquivo == "S":
         formato = input("Digite o formato desejado (txt, pdf, docx): ").lower()
@@ -255,6 +262,7 @@ def busca_tarefa():
             return
         print(Fore.GREEN + f"Resultado salvo com sucesso em '{nome_arquivo}'." + Fore.RESET)
 
+# Padronização de tabela
 def formatar_tabela(df):
     col_widths = {"# Reg": 5, "Tarefa": 16, "Descrição": 46, "Vencimento": 12, "Estado": 15}
 
@@ -285,7 +293,8 @@ def formatar_tabela(df):
         output.append("-" * (sum(col_widths.values()) + 4))
     
     return "\n".join(output)
-    
+
+# Salvar uma nova tarefa no arquivo.
 def nova_tarefa():
     print("Você deseja criar uma nova tarefa? (1-SIM/2-NÃO)")
     respNova = int(input())
@@ -311,6 +320,7 @@ def nova_tarefa():
             
                 nova_tarefa['estado'] = int(input("A tarefa está concluída? (1-SIM/2-NÃO): "))
 
+                # Mostra a nova tarefa criada para correção de algum erro.
                 print(Fore.BLUE + "-" * 60)
                 print("Resumo da tarefa:")
                 print("Título:", nova_tarefa['titulo'])
@@ -319,6 +329,7 @@ def nova_tarefa():
                 print("Estado:", "Finalizada" if nova_tarefa['estado'] == 1 else "Não finalizada")
                 print("-" * 60 + Style.RESET_ALL)
 
+                # Correção por campo desejado.
                 print("Deseja corrigir algum campo? (1-SIM/2-NÃO)")
                 corrigir = int(input())
                 if corrigir == 1:
@@ -363,14 +374,14 @@ def nova_tarefa():
             print("Opção inválida, digite 1 para sim ou 2 para não.")
             respNova = int(input())
 
-
+# Salva a tarefa no arquivo dados.csv
 def salvar_tarefa(nova_tarefa):
     with open("dados.csv", "a", encoding="utf-8", newline='') as arquivo:
         novodado = csv.writer(arquivo)
         novodado.writerow([nova_tarefa['registro'], nova_tarefa['titulo'], nova_tarefa['descricao'], nova_tarefa['vencimento'], nova_tarefa['estado']])
         print("Tarefa salva com sucesso:", nova_tarefa)
 
-
+# Abre e mostra o arquivo dados.csv em formato de tabela.
 def ver_tarefas():
     nome_colunas = ["Núm. Registro", "Tarefa", "Descrição", "Vencimento", "Estado"]
     data = pd.read_csv('dados.csv', header=None, names=nome_colunas)
@@ -405,10 +416,12 @@ def ver_tarefas():
     menu()
     return
 
+# Quebra de linha para padrões estéticos da tabela.
 def quebra_linha(text, n=30):
     """Insere quebras de linha em um texto a cada n caracteres."""
     return '\n'.join([text[i:i+n] for i in range(0, len(text), n)])
 
+# Mostra as tarefas que estão proximas do vencimento.
 def tarefas_proximas():
     nome_colunas = ["Núm. Registro", "Tarefa", "Descrição", "Vencimento", "Estado"]
     data = pd.read_csv('dados.csv', header=None, names=nome_colunas)
@@ -453,7 +466,8 @@ def tarefas_proximas():
         print(Fore.RESET)
     menu()
     return()
-    
+
+# Resumo das tarerfas que é usado em outras funções do programa para edição, exclusão e etc.
 def resumo_tarefas():
     
     nome_colunas = ["Núm. Registro", "Tarefa", "Descrição", "Vencimento", "Estado"]
@@ -482,6 +496,7 @@ def resumo_tarefas():
     print(Fore.BLUE + "########################################## ╝")
     print(Fore.RESET)
 
+# Encontra uma tarefa específica para modificação.
 def encontrar_tarefa(data, numero_ou_nome):
     
     data['Núm. Registro'] = data['Núm. Registro'].astype(str)
@@ -496,7 +511,8 @@ def encontrar_tarefa(data, numero_ou_nome):
         return linha_tarefa
     else:
         return None
-        
+
+# Modifica a coluna estado da tarefa existente, serve para marcar a tarefa como concluída somente.
 def marcar_tarefa():
     nome_colunas = ["Núm. Registro", "Tarefa", "Descrição", "Vencimento", "Estado"]
     data = pd.read_csv('dados.csv', header=None, names=nome_colunas)
@@ -541,7 +557,7 @@ def marcar_tarefa():
         menu()
         return
 
-
+# Edição das tarefas já existentes para corrigir algum erro de digitação ou informação. Permite inclusive mudar o estado para não finalizado e a data de vencimento, alem dos outros campos.
 def edit_tarefa():
     nome_colunas = ["Núm. Registro", "Tarefa", "Descrição", "Vencimento", "Estado"]
     data = pd.read_csv('dados.csv', header=None, names=nome_colunas)
@@ -666,7 +682,7 @@ def edit_tarefa():
     menu()
     return
 
-
+# Exclui as tarefas que já não são necessárias.
 def excluir_tarefa():
     nome_colunas = ["Núm. Registro", "Tarefa", "Descrição", "Vencimento", "Estado"]
     data = pd.read_csv('dados.csv', header=None, names=nome_colunas)
@@ -709,7 +725,7 @@ def excluir_tarefa():
     menu()
     return
 
-    
+# Padrão de iniciação de um programa python    
 if __name__ == "__main__":
     main()
 
